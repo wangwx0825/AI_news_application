@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #f8f6f1;
+  --color-card: #ffffff;
+  --color-border: #e0ddd5;
+  --color-text: #2c2c2a;
+  --color-sub: #6b6960;
+  --color-hint: #9e9b91;
+  --color-link: #2a6496;
+  --color-accent: #c8553a;
+  --color-sec-bg: #f0eeea;
+  --color-tag-bg: #eae7e0;
+  --color-label: #5a5850;
+
+  --font-serif: 'Noto Serif SC', serif;
+  --font-sans: 'Noto Sans SC', sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+details[open] > summary > .tree-arrow {
+  transform: rotate(90deg);
+}
