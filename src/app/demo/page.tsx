@@ -20,7 +20,7 @@ export default function DemoPage() {
   return (
     <EntryLayout
       breadcrumbItems={breadcrumbItems}
-      title="示例词条标题"
+      title="Company-wiki"
       infoCard={<InfoCard title="基本信息" items={infoCardItems} />}
     >
       <Section title="概述" defaultOpen>
