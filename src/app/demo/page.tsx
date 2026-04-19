@@ -20,7 +20,7 @@ export default function DemoPage() {
   return (
     <EntryLayout
       breadcrumbItems={breadcrumbItems}
-      title="示例词条标题"
+      title="企业知识库示例词条"
       infoCard={<InfoCard title="基本信息" items={infoCardItems} />}
     >
       <Section title="概述" defaultOpen>
@@ -37,7 +37,7 @@ export default function DemoPage() {
 
       <Section title="详细说明" defaultOpen>
         <p>这里展示的是 Section 组件的用法。每个 Section 都可以独立折叠/展开。</p>
-        <ul className="list-disc pl-5 mt-3 space-y-1">
+        <ul className="mt-3 list-disc space-y-1 pl-5">
           <li>支持任意 React 子元素</li>
           <li>默认折叠，可通过 defaultOpen 打开</li>
           <li>适合词条页面的分区结构</li>
@@ -50,7 +50,7 @@ export default function DemoPage() {
 
       <Section title="开发指引">
         <p className="mb-2">新模块的典型结构：</p>
-        <pre className="bg-sec-bg p-3 rounded text-xs overflow-x-auto">
+        <pre className="rounded bg-sec-bg p-3 text-xs overflow-x-auto">
 {`src/app/your-module/
 ├── page.tsx                 // 列表页
 └── [id]/
