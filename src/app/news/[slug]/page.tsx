@@ -33,6 +33,13 @@ export default async function NewsDetailPage({
     { label: '状态', value: news.status ?? '' },
   ]
 
+  const isOpenAI = news.source === 'OpenAI'
+  const hasRealContent =
+    news.content &&
+    news.content.trim() &&
+    news.content.trim() !== news.summary?.trim() &&
+    !news.content.includes('原文链接：')
+
   return (
     <EntryLayout
       breadcrumbItems={breadcrumbItems}
@@ -66,17 +73,25 @@ export default async function NewsDetailPage({
         ) : null}
       </div>
 
-      <Section title="摘要" defaultOpen>
+      <Section title={isOpenAI ? '摘要' : '摘要'} defaultOpen>
         <p className="whitespace-pre-line leading-7 text-foreground/90">
           {news.summary || '暂无摘要'}
         </p>
       </Section>
 
-      <Section title="正文" defaultOpen>
-        <div className="whitespace-pre-line leading-8 text-[15px] text-foreground/95">
-          {news.content || '暂无正文'}
+      {!isOpenAI && hasRealContent ? (
+        <Section title="正文" defaultOpen>
+          <div className="whitespace-pre-line leading-8 text-[15px] text-foreground/95">
+            {news.content}
+          </div>
+        </Section>
+      ) : null}
+
+      {isOpenAI ? (
+        <div className="mt-6 rounded-2xl border border-border bg-white/70 p-4 text-sm text-sub">
+          该来源当前主要展示摘要内容，完整文章请查看原文。
         </div>
-      </Section>
+      ) : null}
     </EntryLayout>
   )
 }

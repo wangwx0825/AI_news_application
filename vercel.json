@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/import-anthropic",
+      "path": "/api/cron/import-all-news",
       "schedule": "0 8 * * *"
     }
   ]
