@@ -2,7 +2,6 @@ import EntryLayout from '@/components/EntryLayout'
 import Section from '@/components/Section'
 import InfoCard from '@/components/InfoCard'
 import { supabase } from '@/lib/supabase'
-import DeleteNewsButton from '@/components/DeleteNewsButton'
 
 export default async function NewsDetailPage({
   params,
@@ -30,6 +29,7 @@ export default async function NewsDetailPage({
   const infoCardItems = [
     { label: '发布时间', value: news.published_at?.slice(0, 10) ?? '' },
     { label: '作者', value: news.author ?? '' },
+    { label: '来源', value: news.source ?? '' },
     { label: '状态', value: news.status ?? '' },
   ]
 
@@ -48,19 +48,34 @@ export default async function NewsDetailPage({
           />
         </div>
       ) : null}
-      
-      <div className="mb-6">
-        <a href="/news" className="text-sm text-link hover:underline">
+
+      <div className="mb-6 flex flex-wrap gap-4 text-sm">
+        <a href="/news" className="text-link hover:underline">
           ← 返回新闻列表
         </a>
+
+        {news.source_url ? (
+          <a
+            href={news.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-link hover:underline"
+          >
+            查看原文 →
+          </a>
+        ) : null}
       </div>
-      
+
       <Section title="摘要" defaultOpen>
-        <p>{news.summary}</p>
+        <p className="whitespace-pre-line leading-7 text-foreground/90">
+          {news.summary || '暂无摘要'}
+        </p>
       </Section>
 
       <Section title="正文" defaultOpen>
-        <p>{news.content}</p>
+        <div className="whitespace-pre-line leading-8 text-[15px] text-foreground/95">
+          {news.content || '暂无正文'}
+        </div>
       </Section>
     </EntryLayout>
   )

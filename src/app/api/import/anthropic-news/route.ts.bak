@@ -1,0 +1,148 @@
+import { NextResponse } from 'next/server'
+import * as cheerio from 'cheerio'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+}
+
+function parseAnthropicDate(dateText: string) {
+  const parsed = new Date(dateText)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toISOString()
+}
+
+export async function POST() {
+  try {
+    const response = await fetch('https://www.anthropic.com/news', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+      },
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `抓取失败，状态码 ${response.status}` },
+        { status: 500 }
+      )
+    }
+
+    const html = await response.text()
+    const $ = cheerio.load(html)
+
+    const items: Array<{
+      title: string
+      slug: string
+      published_at: string | null
+      source: string
+      source_url: string
+      external_id: string
+      summary: string
+      content: string
+      status: string
+      author: string
+    }> = []
+
+    $('a[href^="/news/"]').each((_, el) => {
+      const href = $(el).attr('href')
+      const rawText = $(el).text().replace(/\s+/g, ' ').trim()
+
+      if (!href || !rawText) return
+      if (href === '/news') return
+
+      const dateMatch = rawText.match(/[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}/)
+      if (!dateMatch) return
+
+      const dateText = dateMatch[0]
+
+      const categories = ['Product', 'Announcements', 'Policy', 'Research']
+      let category = 'News'
+      let title = cleaned
+
+      for (const c of categories) {
+        if (cleaned.startsWith(c)) {
+          category = c
+          title = cleaned.slice(c.length).trim()
+          break
+        }
+      }
+
+      if (!title) return
+      const fullUrl = `https://www.anthropic.com${href}`
+      const externalId = `anthropic:${href}`
+
+      items.push({
+        title,
+        slug: slugify(title),
+        published_at: parseAnthropicDate(dateText),
+        source: 'Anthropic',
+        source_url: fullUrl,
+        external_id: externalId,
+        summary: `${category} | 来源：Anthropic`,
+        content: `${title}\n\n原文链接：${fullUrl}`,
+        status: '已发布',
+        author: 'Anthropic',
+      })
+    })
+
+    const uniqueItems = Array.from(
+      new Map(items.map((item) => [item.external_id, item])).values()
+    )
+
+    let inserted = 0
+    let skipped = 0
+
+    const errors: Array<{ external_id: string; message: string }> = []
+
+    for (const item of uniqueItems) {
+      const { error } = await supabase.from('news').upsert(item, {
+        onConflict: 'external_id',
+        ignoreDuplicates: false,
+      })
+
+      if (error) {
+        console.error('写入失败:', item.external_id, error.message)
+        errors.push({
+          external_id: item.external_id,
+          message: error.message,
+        })
+        skipped += 1
+      } else {
+        inserted += 1
+      }
+    }
+
+    return NextResponse.json({
+      message: '采集完成',
+      total_found: uniqueItems.length,
+      inserted,
+      skipped,
+      errors,
+    })
+
+    return NextResponse.json({
+      message: '采集完成',
+      total_found: uniqueItems.length,
+      inserted,
+      skipped,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : '未知错误',
+      },
+      { status: 500 }
+    )
+  }
+}
