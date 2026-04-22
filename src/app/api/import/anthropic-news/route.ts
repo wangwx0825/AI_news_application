@@ -7,6 +7,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+type AnthropicDetailResult = {
+  title: string | null
+  content: string
+  cover_image: string | null
+  author: string | null
+}
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -62,17 +69,44 @@ function removeLeadingMetaFromParagraphs(paragraphs: string[]) {
   return cleaned.filter(Boolean)
 }
 
+function isLikelyBadSummary(text: string) {
+  const cleaned = cleanInlineText(text)
+  if (!cleaned) return true
+  if (cleaned.length < 30) return true
+
+  if (
+    /^(Announcements|Product|Policy|Research)$/i.test(cleaned) ||
+    /^(By\s+.+)$/i.test(cleaned)
+  ) {
+    return true
+  }
+
+  if (
+    cleaned.length < 80 &&
+    /^[A-Z][A-Za-z.'-]+(?:\s+(?:and|&)\s+|\s+)[A-Z][A-Za-z.'-]+/.test(cleaned) &&
+    !/[.!?]/.test(cleaned)
+  ) {
+    return true
+  }
+
+  return false
+}
+
 function buildSummary(content: string, fallbackCategory: string) {
   if (!content) return `${fallbackCategory} | 来源：Anthropic`
 
-  const firstParagraph = content
+  const paragraphs = content
     .split(/\n{2,}/)
     .map((p) => p.trim())
-    .find(Boolean)
+    .filter(Boolean)
 
-  if (!firstParagraph) return `${fallbackCategory} | 来源：Anthropic`
+  for (const paragraph of paragraphs) {
+    if (!isLikelyBadSummary(paragraph)) {
+      return paragraph.slice(0, 220).trim()
+    }
+  }
 
-  return firstParagraph.slice(0, 220).trim()
+  return `${fallbackCategory} | 来源：Anthropic`
 }
 
 function extractParagraphs($: cheerio.CheerioAPI) {
@@ -126,7 +160,34 @@ function extractCoverImage($: cheerio.CheerioAPI, fullUrl: string) {
   return toAbsoluteUrl(firstArticleImage, fullUrl)
 }
 
-async function fetchAnthropicDetail(fullUrl: string) {
+function extractAuthor($: cheerio.CheerioAPI) {
+  const selectors = [
+    'article [rel="author"]',
+    'main [rel="author"]',
+    '[role="main"] [rel="author"]',
+    'article .author',
+    'main .author',
+    '[class*="author"]',
+  ]
+
+  for (const selector of selectors) {
+    const text = cleanInlineText($(selector).first().text())
+    if (text && text.length < 120 && !isLikelyBadSummary(text)) {
+      return text
+    }
+  }
+
+  const bodyText = cleanInlineText($('body').text())
+
+  const byMatch = bodyText.match(/By\s+([A-Z][A-Za-z\s,&.'-]{2,100})/)
+  if (byMatch?.[1]) {
+    return cleanInlineText(byMatch[1])
+  }
+
+  return null
+}
+
+async function fetchAnthropicDetail(fullUrl: string): Promise<AnthropicDetailResult> {
   try {
     const response = await fetch(fullUrl, {
       headers: {
@@ -140,6 +201,7 @@ async function fetchAnthropicDetail(fullUrl: string) {
         title: null,
         content: '',
         cover_image: null,
+        author: null,
       }
     }
 
@@ -153,12 +215,14 @@ async function fetchAnthropicDetail(fullUrl: string) {
 
     const coverImage = extractCoverImage($, fullUrl)
     const paragraphs = extractParagraphs($)
+    const author = extractAuthor($)
 
     if (paragraphs.length > 0) {
       return {
         title: pageTitle || null,
         content: paragraphs.join('\n\n'),
         cover_image: coverImage,
+        author,
       }
     }
 
@@ -176,12 +240,14 @@ async function fetchAnthropicDetail(fullUrl: string) {
       title: pageTitle || null,
       content: normalizeJoinedContent(rawContent),
       cover_image: coverImage,
+      author,
     }
   } catch {
     return {
       title: null,
       content: '',
       cover_image: null,
+      author: null,
     }
   }
 }
@@ -279,7 +345,7 @@ export async function POST(request: Request) {
         summary: buildSummary(finalContent, category),
         content: finalContent,
         status: '已发布',
-        author: 'Anthropic',
+        author: detail.author || 'Anthropic',
         cover_image: detail.cover_image,
       }
 

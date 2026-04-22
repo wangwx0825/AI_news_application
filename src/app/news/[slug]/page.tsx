@@ -1,5 +1,4 @@
 import EntryLayout from '@/components/EntryLayout'
-import Section from '@/components/Section'
 import InfoCard from '@/components/InfoCard'
 import { supabase } from '@/lib/supabase'
 
@@ -33,13 +32,6 @@ export default async function NewsDetailPage({
     { label: '状态', value: news.status ?? '' },
   ]
 
-  const isOpenAI = news.source === 'OpenAI'
-  const hasRealContent =
-    news.content &&
-    news.content.trim() &&
-    news.content.trim() !== news.summary?.trim() &&
-    !news.content.includes('原文链接：')
-
   return (
     <EntryLayout
       breadcrumbItems={breadcrumbItems}
@@ -51,7 +43,7 @@ export default async function NewsDetailPage({
           <img
             src={news.cover_image}
             alt={news.title}
-            className="h-[320px] w-full object-cover"
+            className="max-h-[520px] w-full object-cover"
           />
         </div>
       ) : null}
@@ -73,25 +65,9 @@ export default async function NewsDetailPage({
         ) : null}
       </div>
 
-      <Section title={isOpenAI ? '摘要' : '摘要'} defaultOpen>
-        <p className="whitespace-pre-line leading-7 text-foreground/90">
-          {news.summary || '暂无摘要'}
-        </p>
-      </Section>
-
-      {!isOpenAI && hasRealContent ? (
-        <Section title="正文" defaultOpen>
-          <div className="whitespace-pre-line leading-8 text-[15px] text-foreground/95">
-            {news.content}
-          </div>
-        </Section>
-      ) : null}
-
-      {isOpenAI ? (
-        <div className="mt-6 rounded-2xl border border-border bg-white/70 p-4 text-sm text-sub">
-          该来源当前主要展示摘要内容，完整文章请查看原文。
-        </div>
-      ) : null}
+      <div className="rounded-2xl border border-border bg-white/70 p-4 text-sm text-sub">
+        当前页面仅展示新闻标题与封面图片，完整内容请查看原文。
+      </div>
     </EntryLayout>
   )
 }

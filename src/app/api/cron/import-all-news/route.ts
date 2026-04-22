@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL ||
       new URL(request.url).origin
 
-    const [anthropicRes, openaiRes] = await Promise.all([
+    const [anthropicRes, openaiRes, deepmindRes, metaRes] = await Promise.all([
       fetch(`${baseUrl}/api/import/anthropic-news`, {
         method: 'POST',
         headers: {
@@ -40,10 +40,26 @@ export async function GET(request: NextRequest) {
         },
         cache: 'no-store',
       }),
+      fetch(`${baseUrl}/api/import/deepmind-news`, {
+        method: 'POST',
+        headers: {
+          authorization: expected,
+        },
+        cache: 'no-store',
+      }),
+      fetch(`${baseUrl}/api/import/meta-news`, {
+        method: 'POST',
+        headers: {
+          authorization: expected,
+        },
+        cache: 'no-store',
+      }),
     ])
 
     const anthropicData = await anthropicRes.json()
     const openaiData = await openaiRes.json()
+    const deepmindData = await deepmindRes.json()
+    const metaData = await metaRes.json()
 
     return NextResponse.json({
       message: '全部新闻采集完成',
@@ -54,6 +70,14 @@ export async function GET(request: NextRequest) {
       openai: {
         status: openaiRes.status,
         result: openaiData,
+      },
+      deepmind: {
+        status: deepmindRes.status,
+        result: deepmindData,
+      },
+      meta: {
+        status: metaRes.status,
+        result: metaData,
       },
     })
   } catch (error) {

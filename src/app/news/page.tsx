@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 type NewsItem = {
@@ -12,6 +12,8 @@ type NewsItem = {
   status: string | null
   slug: string
   cover_image: string | null
+  source: string | null
+  category: string | null
 }
 
 export default function NewsPage() {
@@ -19,6 +21,7 @@ export default function NewsPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedSource, setSelectedSource] = useState('全部')
 
   useEffect(() => {
     async function fetchNews() {
@@ -40,9 +43,28 @@ export default function NewsPage() {
     fetchNews()
   }, [])
 
-  const filteredNews = newsList.filter((item) =>
-    item.title.toLowerCase().includes(search.toLowerCase())
-  )
+  const sourceOptions = useMemo(() => {
+    const sources = Array.from(
+      new Set(
+        newsList
+          .map((item) => item.source?.trim())
+          .filter(Boolean)
+      )
+    ) as string[]
+
+    return ['全部', ...sources]
+  }, [newsList])
+
+  const filteredNews = newsList.filter((item) => {
+    const matchSearch = item.title
+      .toLowerCase()
+      .includes(search.toLowerCase())
+
+    const matchSource =
+      selectedSource === '全部' || item.source === selectedSource
+
+    return matchSearch && matchSource
+  })
 
   if (loading) {
     return (
@@ -77,6 +99,27 @@ export default function NewsPage() {
         />
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-3">
+        {sourceOptions.map((source) => {
+          const isActive = selectedSource === source
+
+          return (
+            <button
+              key={source}
+              type="button"
+              onClick={() => setSelectedSource(source)}
+              className={`rounded-full border px-4 py-2 text-sm transition ${
+                isActive
+                  ? 'border-text bg-text text-white'
+                  : 'border-border bg-white/80 text-sub hover:bg-white'
+              }`}
+            >
+              {source}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="space-y-6">
         {filteredNews.map((item) => (
           <a
@@ -100,6 +143,20 @@ export default function NewsPage() {
               <h2 className="mt-2 text-2xl font-semibold text-text transition duration-300 group-hover:text-link">
                 {item.title}
               </h2>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {item.source ? (
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700">
+                    {item.source}
+                  </span>
+                ) : null}
+
+                {item.category ? (
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700">
+                    {item.category}
+                  </span>
+                ) : null}
+              </div>
 
               <p className="mt-3 text-base leading-8 text-gray-700">
                 {item.summary}
