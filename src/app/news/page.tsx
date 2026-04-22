@@ -63,15 +63,8 @@ export default function NewsPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">新闻</h1>
-
-        <a
-          href="/news/new"
-          className="rounded-lg bg-text px-4 py-2 text-sm text-white no-underline transition hover:opacity-90"
-        >
-          + 新增新闻
-        </a>
       </div>
 
       <div className="mb-6">

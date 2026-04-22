@@ -26,13 +26,6 @@ export default function Header() {
       </Link>
 
       <AdminEntryButton />
-
-      <Link
-        href="/demo"
-        className="inline-block text-sm text-sub transition duration-300 hover:scale-110 hover:text-link"
-      >
-        示例页面
-      </Link>
     </div>
   )
 }
