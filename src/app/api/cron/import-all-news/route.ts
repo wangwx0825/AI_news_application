@@ -25,40 +25,48 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL ||
       new URL(request.url).origin
 
-    const [anthropicRes, openaiRes, deepmindRes, metaRes, huggingfaceRes] = await Promise.all([
+    const [
+      anthropicRes,
+      openaiRes,
+      deepmindRes,
+      metaRes,
+      huggingfaceRes,
+      mistralRes,
+      stabilityRes,
+    ] = await Promise.all([
       fetch(`${baseUrl}/api/import/anthropic-news`, {
         method: 'POST',
-        headers: {
-          authorization: expected,
-        },
+        headers: { authorization: expected },
         cache: 'no-store',
       }),
       fetch(`${baseUrl}/api/import/openai-news`, {
         method: 'POST',
-        headers: {
-          authorization: expected,
-        },
+        headers: { authorization: expected },
         cache: 'no-store',
       }),
       fetch(`${baseUrl}/api/import/deepmind-news`, {
         method: 'POST',
-        headers: {
-          authorization: expected,
-        },
+        headers: { authorization: expected },
         cache: 'no-store',
       }),
       fetch(`${baseUrl}/api/import/meta-news`, {
         method: 'POST',
-        headers: {
-          authorization: expected,
-        },
+        headers: { authorization: expected },
         cache: 'no-store',
       }),
       fetch(`${baseUrl}/api/import/huggingface-news`, {
         method: 'POST',
-        headers: {
-          authorization: expected,
-        },
+        headers: { authorization: expected },
+        cache: 'no-store',
+      }),
+      fetch(`${baseUrl}/api/import/mistral-news`, {
+        method: 'POST',
+        headers: { authorization: expected },
+        cache: 'no-store',
+      }),
+      fetch(`${baseUrl}/api/import/stability-news`, {
+        method: 'POST',
+        headers: { authorization: expected },
         cache: 'no-store',
       }),
     ])
@@ -68,6 +76,8 @@ export async function GET(request: NextRequest) {
     const deepmindData = await deepmindRes.json()
     const metaData = await metaRes.json()
     const huggingfaceData = await huggingfaceRes.json()
+    const mistralData = await mistralRes.json()
+    const stabilityData = await stabilityRes.json()
 
     return NextResponse.json({
       message: '全部新闻采集完成',
@@ -90,6 +100,14 @@ export async function GET(request: NextRequest) {
       huggingface: {
         status: huggingfaceRes.status,
         result: huggingfaceData,
+      },
+      mistral: {
+        status: mistralRes.status,
+        result: mistralData,
+      },
+      stability: {
+        status: stabilityRes.status,
+        result: stabilityData,
       },
     })
   } catch (error) {
