@@ -9,7 +9,6 @@ type FAQItem = {
   answer: string
   category: string | null
   slug: string
-  updated_at: string
 }
 
 export default function FAQPage() {
@@ -19,11 +18,10 @@ export default function FAQPage() {
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    async function fetchFAQ() {
+    async function fetchFAQs() {
       const { data, error } = await supabase
         .from('faq')
         .select('*')
-        .order('updated_at', { ascending: false })
 
       if (error) {
         setErrorMessage(error.message)
@@ -35,10 +33,10 @@ export default function FAQPage() {
       setLoading(false)
     }
 
-    fetchFAQ()
+    fetchFAQs()
   }, [])
 
-  const filteredFAQ = faqList.filter((item) =>
+  const filteredFAQs = faqList.filter((item) =>
     item.question.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -61,15 +59,8 @@ export default function FAQPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">FAQ</h1>
-
-        <a
-          href="/faq/new"
-          className="rounded-lg bg-text px-4 py-2 text-sm text-white no-underline transition hover:opacity-90"
-        >
-          + 新增 FAQ
-        </a>
       </div>
 
       <div className="mb-6">
@@ -82,23 +73,29 @@ export default function FAQPage() {
         />
       </div>
 
-      <div className="space-y-4">
-        {filteredFAQ.map((item) => (
+      <div className="space-y-6">
+        {filteredFAQs.map((item) => (
           <a
             key={item.id}
             href={`/faq/${item.slug}`}
-            className="block rounded-2xl border border-border bg-white/75 p-5 no-underline shadow-lg transition duration-300 hover:-translate-y-1 hover:bg-white/90 hover:shadow-xl"
+            className="block rounded-2xl border border-border bg-white/70 p-5 no-underline shadow-lg transition duration-300 hover:-translate-y-1 hover:bg-white/85 hover:shadow-xl"
           >
-            <div className="text-sm text-sub">{item.category}</div>
-            <h2 className="mt-2 text-xl font-semibold text-text">
+            <p className="text-sm text-gray-500">
+              {item.category || '未分类'}
+            </p>
+
+            <h2 className="mt-2 text-2xl font-semibold text-text transition duration-300 hover:text-link">
               {item.question}
             </h2>
-            <p className="mt-3 text-base leading-7 text-sub">{item.answer}</p>
+
+            <p className="mt-3 text-base leading-8 text-gray-700 line-clamp-3">
+              {item.answer}
+            </p>
           </a>
         ))}
       </div>
 
-      {!filteredFAQ.length ? (
+      {!filteredFAQs.length ? (
         <p className="mt-6 text-sm text-sub">没有找到符合条件的 FAQ。</p>
       ) : null}
     </main>
