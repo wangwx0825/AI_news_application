@@ -45,11 +45,7 @@ export default function NewsPage() {
 
   const sourceOptions = useMemo(() => {
     const sources = Array.from(
-      new Set(
-        newsList
-          .map((item) => item.source?.trim())
-          .filter(Boolean)
-      )
+      new Set(newsList.map((item) => item.source?.trim()).filter(Boolean))
     ) as string[]
 
     return ['全部', ...sources]
@@ -151,7 +147,8 @@ export default function NewsPage() {
                   </span>
                 ) : null}
 
-                {item.category ? (
+                {item.category?.trim() &&
+                item.category.trim() !== item.source?.trim() ? (
                   <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700">
                     {item.category}
                   </span>
