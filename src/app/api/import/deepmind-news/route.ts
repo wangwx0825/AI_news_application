@@ -39,6 +39,19 @@ function cleanInlineText(text: string) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+function cleanTitle(text: string, source: 'Google DeepMind' | 'Stability AI') {
+  const cleaned = cleanInlineText(text)
+
+  if (!cleaned) return cleaned
+
+  const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  return cleaned
+    .replace(new RegExp(`\\s*[—–-]{1,2}\\s*${escapedSource}\\s*$`, 'i'), '')
+    .replace(new RegExp(`\\s*\\|\\s*${escapedSource}\\s*$`, 'i'), '')
+    .trim()
+}
+
 function cleanParagraph(text: string) {
   return text
     .replace(/\u00a0/g, ' ')
@@ -84,7 +97,6 @@ function isLikelyBadSummary(text: string) {
     return true
   }
 
-  // 过滤掉很像作者名的短句
   if (
     cleaned.length < 80 &&
     /^[A-Z][A-Za-z.'-]+(?:\s+(?:and|&)\s+|\s+)[A-Z][A-Za-z.'-]+/.test(cleaned) &&
@@ -475,11 +487,13 @@ async function fetchDeepMindDetail(fullUrl: string): Promise<DeepMindDetailResul
     const html = await response.text()
     const $ = cheerio.load(html)
 
-    const pageTitle = cleanInlineText($('title').text())
-      .replace(/\s*\|\s*Google DeepMind\s*$/i, '')
-      .replace(/\s*\\\s*Google DeepMind\s*$/i, '')
-      .replace(/\s*\|\s*Google Blog\s*$/i, '')
-      .replace(/\s*\\\s*Google Blog\s*$/i, '')
+    const pageTitle = cleanTitle(
+      cleanInlineText($('title').text())
+        .replace(/\s*\\\s*Google DeepMind\s*$/i, '')
+        .replace(/\s*\|\s*Google Blog\s*$/i, '')
+        .replace(/\s*\\\s*Google Blog\s*$/i, ''),
+      'Google DeepMind'
+    )
 
     const coverImage = extractCoverImage($, fullUrl)
     const publishedAt = extractDetailDate($)
@@ -622,7 +636,10 @@ export async function POST(request: NextRequest) {
     for (const rawItem of rawItems) {
       const detail = await fetchDeepMindDetail(rawItem.link)
 
-      const finalTitle = detail.title || rawItem.title
+      const finalTitle = cleanTitle(
+        detail.title || rawItem.title,
+        'Google DeepMind'
+      )
       const finalBlocks = detail.content_blocks || []
       const finalContent =
         detail.content || `${finalTitle}\n\n原文链接：${rawItem.link}`
@@ -677,4 +694,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

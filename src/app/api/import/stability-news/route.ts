@@ -20,6 +20,19 @@ function cleanInlineText(text: string) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+function cleanTitle(text: string, source: 'Google DeepMind' | 'Stability AI') {
+  const cleaned = cleanInlineText(text)
+
+  if (!cleaned) return cleaned
+
+  const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  return cleaned
+    .replace(new RegExp(`\\s*[—–-]{1,2}\\s*${escapedSource}\\s*$`, 'i'), '')
+    .replace(new RegExp(`\\s*\\|\\s*${escapedSource}\\s*$`, 'i'), '')
+    .trim()
+}
+
 function parseDate(dateText: string | undefined) {
   if (!dateText) return null
   const parsed = new Date(dateText)
@@ -98,7 +111,9 @@ function extractAuthor($: cheerio.CheerioAPI) {
   }
 
   const bodyText = cleanInlineText($('body').text())
-  const byMatch = bodyText.match(/Written By\s+([A-Z][A-Za-z\s,&.'-]{2,100})|By\s+([A-Z][A-Za-z\s,&.'-]{2,100})/)
+  const byMatch = bodyText.match(
+    /Written By\s+([A-Z][A-Za-z\s,&.'-]{2,100})|By\s+([A-Z][A-Za-z\s,&.'-]{2,100})/
+  )
   if (byMatch?.[1]) return cleanInlineText(byMatch[1])
   if (byMatch?.[2]) return cleanInlineText(byMatch[2])
 
@@ -139,8 +154,10 @@ async function fetchStabilityDetail(fullUrl: string) {
     const html = await response.text()
     const $ = cheerio.load(html)
 
-    const pageTitle = cleanInlineText($('title').text())
-      .replace(/\s*\|\s*Stability AI\s*$/i, '')
+    const pageTitle = cleanTitle(
+      cleanInlineText($('title').text()),
+      'Stability AI'
+    )
 
     const coverImage = extractCoverImage($, fullUrl)
     const publishedAt = extractDetailDate($)
@@ -193,7 +210,10 @@ async function fetchStabilityListItems() {
     if (!fullUrl) return
 
     if (!fullUrl.startsWith('https://stability.ai/news-updates/')) return
-    if (fullUrl === 'https://stability.ai/news-updates/' || fullUrl === 'https://stability.ai/news-updates') return
+    if (
+      fullUrl === 'https://stability.ai/news-updates/' ||
+      fullUrl === 'https://stability.ai/news-updates'
+    ) return
     if (fullUrl.includes('/category/')) return
 
     const text = cleanInlineText($(el).text())
@@ -232,7 +252,10 @@ export async function POST(request: Request) {
 
     for (const rawItem of rawItems) {
       const detail = await fetchStabilityDetail(rawItem.href)
-      const finalTitle = detail.title || rawItem.title
+      const finalTitle = cleanTitle(
+        detail.title || rawItem.title,
+        'Stability AI'
+      )
 
       const record = {
         title: finalTitle,
