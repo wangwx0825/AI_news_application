@@ -50,35 +50,39 @@ export default function Header() {
               </span>
             </button>
 
-            {open ? (
-              <div className="absolute left-0 top-full z-50 pt-2">
-                <div className="w-44 overflow-hidden rounded-2xl border border-white/60 bg-white/90 shadow-xl backdrop-blur-md">
-                  <Link
-                    href="/"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
-                  >
-                    首页
-                  </Link>
+            <div
+              className={`absolute left-0 top-full z-50 pt-2 transition-all duration-400 ease-out ${
+                open
+                  ? 'translate-y-0 scale-100 opacity-100'
+                  : 'pointer-events-none -translate-y-2 scale-95 opacity-0'
+              }`}
+            >
+              <div className="w-44 overflow-hidden rounded-2xl border border-white/60 bg-white/90 shadow-xl backdrop-blur-md">
+                <Link
+                  href="/"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
+                >
+                  首页
+                </Link>
 
-                  <Link
-                    href="/faq"
-                    onClick={() => setOpen(false)}
-                    className="block border-t border-border px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
-                  >
-                    常见问题
-                  </Link>
+                <Link
+                  href="/faq"
+                  onClick={() => setOpen(false)}
+                  className="block border-t border-border px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
+                >
+                  常见问题
+                </Link>
 
-                  <Link
-                    href="/admin"
-                    onClick={() => setOpen(false)}
-                    className="block border-t border-border px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
-                  >
-                    后台管理
-                  </Link>
-                </div>
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="block border-t border-border px-4 py-3 text-sm text-text no-underline transition hover:bg-white hover:text-link"
+                >
+                  后台管理
+                </Link>
               </div>
-            ) : null}
+            </div>
           </div>
         </div>
       </div>
