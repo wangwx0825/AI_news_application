@@ -7,7 +7,7 @@ type NewsItem = {
   id: string
   title: string
   summary: string
-  published_at: string
+  published_at: string | null
   author: string | null
   status: string | null
   slug: string
@@ -28,7 +28,7 @@ export default function NewsPage() {
       const { data, error } = await supabase
         .from('news')
         .select('*')
-        .order('published_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsFirst: false })
 
       if (error) {
         setErrorMessage(error.message)
@@ -133,7 +133,7 @@ export default function NewsPage() {
 
             <div className="p-5">
               <p className="text-sm text-gray-500">
-                {item.published_at?.slice(0, 10)}
+                {item.published_at?.slice(0, 10) ?? '暂无日期'}
               </p>
 
               <h2 className="mt-2 text-2xl font-semibold text-text transition duration-300 group-hover:text-link">
@@ -160,7 +160,7 @@ export default function NewsPage() {
               </p>
 
               <div className="mt-4 text-sm text-gray-500">
-                作者：{item.author ?? '未知'}　|　状态：{item.status ?? '未设置'}
+                状态：{item.status ?? '未设置'}
               </div>
             </div>
           </a>

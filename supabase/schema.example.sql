@@ -4,9 +4,18 @@
 create table if not exists news (
   id uuid primary key default gen_random_uuid(),
   title text not null,
+  slug text unique,
   summary text,
   content text,
+  content_blocks jsonb default '[]'::jsonb,
   tags text[],
+  source text,
+  source_url text,
+  external_id text unique,
+  author text,
+  status text,
+  cover_image text,
+  category text,
   published_at timestamptz default now(),
   created_at timestamptz default now()
 );
