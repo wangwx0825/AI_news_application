@@ -2,11 +2,19 @@ import { NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 import { createClient } from '@supabase/supabase-js'
 import { XMLParser } from 'fast-xml-parser'
+import type { AnyNode } from 'domhandler'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+
+type ContentBlock =
+  | { type: 'heading'; level: 2 | 3; content: string }
+  | { type: 'paragraph'; content: string }
+  | { type: 'quote'; content: string }
+  | { type: 'image'; src: string; alt?: string; caption?: string }
+  | { type: 'video'; src: string; poster?: string; caption?: string }
 
 function slugify(text: string) {
   return text
@@ -44,6 +52,22 @@ function toAbsoluteUrl(url: string | undefined, baseUrl: string) {
   }
 }
 
+function pickLargestFromSrcset(srcset: string | undefined) {
+  if (!srcset) return null
+
+  const candidates = srcset
+    .split(',')
+    .map((candidate) => {
+      const [url, size] = candidate.trim().split(/\s+/)
+      const width = Number.parseInt(size?.replace('w', '') || '0', 10)
+      return { url, width: Number.isNaN(width) ? 0 : width }
+    })
+    .filter((candidate) => candidate.url)
+    .sort((a, b) => b.width - a.width)
+
+  return candidates[0]?.url || null
+}
+
 function extractCoverImage($: cheerio.CheerioAPI, fullUrl: string) {
   const ogImage =
     $('meta[property="og:image"]').attr('content') ||
@@ -63,6 +87,290 @@ function extractCoverImage($: cheerio.CheerioAPI, fullUrl: string) {
   return toAbsoluteUrl(firstImage, fullUrl)
 }
 
+function getImageSrc($el: cheerio.Cheerio<AnyNode>, fullUrl: string) {
+  const $img = $el.is('img') ? $el : $el.find('img').first()
+  const sourceSrcset =
+    $el.is('picture')
+      ? $el.find('source').last().attr('srcset') ||
+        $el.find('source').last().attr('data-srcset')
+      : undefined
+  const src =
+    pickLargestFromSrcset(sourceSrcset) ||
+    pickLargestFromSrcset($img.attr('srcset')) ||
+    pickLargestFromSrcset($img.attr('data-srcset')) ||
+    $img.attr('src') ||
+    $img.attr('data-src') ||
+    $img.attr('data-original')
+
+  return toAbsoluteUrl(src, fullUrl)
+}
+
+function getMediaSrc($el: cheerio.Cheerio<AnyNode>, fullUrl: string) {
+  const src =
+    $el.attr('src') ||
+    $el.attr('data-src') ||
+    $el.find('source').first().attr('src') ||
+    $el.find('source').first().attr('data-src')
+
+  return toAbsoluteUrl(src, fullUrl)
+}
+
+function getVideoPoster($el: cheerio.Cheerio<AnyNode>, fullUrl: string) {
+  const poster = $el.attr('poster')
+  if (!poster) return null
+  return toAbsoluteUrl(poster, fullUrl)
+}
+
+function isLikelyContentImage(src: string, alt: string, caption = '') {
+  const lower = `${src} ${alt} ${caption}`.toLowerCase()
+
+  if (lower.endsWith('.svg')) return false
+  if (lower.includes('/icons/') || lower.includes('/icon/')) return false
+  if (lower.includes('logo')) return false
+  if (lower.includes('avatar')) return false
+  if (lower.includes('tracking')) return false
+  if (lower.includes('placeholder')) return false
+  if (lower.includes('transparent')) return false
+  if (lower.includes('spacer')) return false
+  if (lower.includes('blur')) return false
+  if (lower.includes('newsletter')) return false
+  if (lower.includes('subscribe')) return false
+
+  return true
+}
+
+function isNonArticleMediaContext($el: cheerio.Cheerio<AnyNode>) {
+  return Boolean(
+    $el.closest(
+      [
+        'header',
+        'footer',
+        'nav',
+        'aside',
+        '[class*="carousel"]',
+        '[class*="slider"]',
+        '[class*="swiper"]',
+        '[class*="newsletter"]',
+        '[class*="subscribe"]',
+        '[class*="footer"]',
+        '[class*="header"]',
+        '[class*="nav"]',
+        '[class*="share"]',
+        '[class*="social"]',
+        '[class*="logo"]',
+      ].join(',')
+    ).length
+  )
+}
+
+function pickContentContainer(
+  $: cheerio.CheerioAPI
+): cheerio.Cheerio<AnyNode> | null {
+  const selectors = ['article', 'main article', 'main', '[role="main"]', '.prose']
+  let bestContainer: cheerio.Cheerio<AnyNode> | null = null
+  let bestScore = 0
+
+  for (const selector of selectors) {
+    $(selector).each((_, el) => {
+      const candidate = $(el)
+      const paragraphCount = candidate
+        .find('p')
+        .map((__, paragraph) => cleanInlineText($(paragraph).text()))
+        .get()
+        .filter((text) => text.length > 40).length
+      const mediaCount = candidate.find('figure, picture, img, video').length
+      const headingCount = candidate.find('h2, h3').length
+      const score = paragraphCount * 3 + mediaCount + headingCount
+
+      if (score > bestScore) {
+        bestScore = score
+        bestContainer = candidate as cheerio.Cheerio<AnyNode>
+      }
+    })
+  }
+
+  return bestContainer
+}
+
+function extractContentBlocks($: cheerio.CheerioAPI, fullUrl: string) {
+  const $container = pickContentContainer($)
+  if (!$container) return []
+
+  const blocks: ContentBlock[] = []
+  const seenImages = new Set<string>()
+  const seenMedia = new Set<string>()
+
+  $container
+    .find('h2, h3, p, blockquote, figure, picture, img, video')
+    .each((_, el) => {
+      const $el = $(el)
+      const tagName = el.tagName?.toLowerCase()
+
+      if (
+        tagName !== 'figure' &&
+        ($el.closest('figcaption').length || $el.closest('figure').length)
+      ) {
+        return
+      }
+
+      if (tagName === 'h2' || tagName === 'h3') {
+        const text = cleanInlineText($el.text())
+        if (text) {
+          blocks.push({
+            type: 'heading',
+            level: tagName === 'h3' ? 3 : 2,
+            content: text,
+          })
+        }
+        return
+      }
+
+      if (tagName === 'p') {
+        const text = cleanInlineText($el.text())
+        if (
+          text &&
+          !text.includes('Your browser does not support the video tag.') &&
+          !text.includes('Your browser does not support the video element.')
+        ) {
+          blocks.push({ type: 'paragraph', content: text })
+        }
+        return
+      }
+
+      if (tagName === 'blockquote') {
+        const text = cleanInlineText($el.text())
+        if (text) blocks.push({ type: 'quote', content: text })
+        return
+      }
+
+      if (tagName === 'figure') {
+        if (isNonArticleMediaContext($el)) return
+
+        const src = getImageSrc($el, fullUrl)
+        const alt = cleanInlineText($el.find('img').first().attr('alt') || '')
+        const caption = cleanInlineText($el.find('figcaption').first().text())
+
+        if (
+          src &&
+          !seenImages.has(src) &&
+          isLikelyContentImage(src, alt, caption)
+        ) {
+          seenImages.add(src)
+          blocks.push({ type: 'image', src, alt, caption })
+        }
+
+        const $video = $el.find('video').first()
+        const videoSrc = getMediaSrc($video, fullUrl)
+        const poster = getVideoPoster($video, fullUrl)
+
+        if (videoSrc && !seenMedia.has(videoSrc)) {
+          seenMedia.add(videoSrc)
+          blocks.push({
+            type: 'video',
+            src: videoSrc,
+            poster: poster || undefined,
+            caption: caption || undefined,
+          })
+        }
+
+        return
+      }
+
+      if (tagName === 'picture' || tagName === 'img') {
+        if ($el.closest('figure').length) return
+        if (isNonArticleMediaContext($el)) return
+
+        const src = getImageSrc($el, fullUrl)
+        const alt = cleanInlineText(
+          tagName === 'picture'
+            ? $el.find('img').first().attr('alt') || ''
+            : $el.attr('alt') || ''
+        )
+
+        if (!alt) return
+
+        if (src && !seenImages.has(src) && isLikelyContentImage(src, alt)) {
+          seenImages.add(src)
+          blocks.push({ type: 'image', src, alt })
+        }
+
+        return
+      }
+
+      if (tagName === 'video') {
+        const src = getMediaSrc($el, fullUrl)
+        const poster = getVideoPoster($el, fullUrl)
+
+        if (src && !seenMedia.has(src)) {
+          seenMedia.add(src)
+          blocks.push({ type: 'video', src, poster: poster || undefined })
+        }
+      }
+    })
+
+  return blocks
+}
+
+function blocksToPlainText(blocks: ContentBlock[]) {
+  return blocks
+    .filter((block) => block.type === 'paragraph')
+    .map((block) => block.content)
+    .join('\n\n')
+    .trim()
+}
+
+function imageKey(src: string) {
+  try {
+    const url = new URL(src)
+    url.search = ''
+    const filename = url.pathname.split('/').filter(Boolean).pop()
+
+    if (filename) return filename.toLowerCase()
+
+    return url.toString().toLowerCase()
+  } catch {
+    return src.toLowerCase()
+  }
+}
+
+function removeDuplicateMedia(blocks: ContentBlock[], coverImage: string | null) {
+  const seenImages = new Set<string>()
+  const seenVideos = new Set<string>()
+  const coverKey = coverImage ? imageKey(coverImage) : null
+  let hasStartedBodyText = false
+
+  return blocks.filter((block) => {
+    if (block.type !== 'image' && block.type !== 'video') {
+      if (
+        (block.type === 'paragraph' ||
+          block.type === 'heading' ||
+          block.type === 'quote') &&
+        block.content.trim()
+      ) {
+        hasStartedBodyText = true
+      }
+
+      return true
+    }
+
+    if (block.type === 'video') {
+      const key = imageKey(block.src)
+      if (!hasStartedBodyText) return false
+      if (seenVideos.has(key)) return false
+      seenVideos.add(key)
+      return true
+    }
+
+    const key = imageKey(block.src)
+    if (!hasStartedBodyText) return false
+    if (coverKey && key === coverKey) return false
+    if (seenImages.has(key)) return false
+
+    seenImages.add(key)
+    return true
+  })
+}
+
 async function fetchHuggingFaceDetail(fullUrl: string) {
   try {
     const response = await fetch(fullUrl, {
@@ -78,6 +386,8 @@ async function fetchHuggingFaceDetail(fullUrl: string) {
         cover_image: null,
         published_at: null,
         author: null,
+        content: '',
+        content_blocks: [],
       }
     }
 
@@ -88,6 +398,10 @@ async function fetchHuggingFaceDetail(fullUrl: string) {
       .replace(/\s*\|\s*Hugging Face\s*$/i, '')
 
     const coverImage = extractCoverImage($, fullUrl)
+    const contentBlocks = removeDuplicateMedia(
+      extractContentBlocks($, fullUrl),
+      coverImage
+    )
 
     const publishedAt =
       parseDate(
@@ -108,6 +422,8 @@ async function fetchHuggingFaceDetail(fullUrl: string) {
       cover_image: coverImage,
       published_at: publishedAt,
       author: author || 'Hugging Face',
+      content: blocksToPlainText(contentBlocks),
+      content_blocks: contentBlocks,
     }
   } catch {
     return {
@@ -115,6 +431,8 @@ async function fetchHuggingFaceDetail(fullUrl: string) {
       cover_image: null,
       published_at: null,
       author: null,
+      content: '',
+      content_blocks: [],
     }
   }
 }
@@ -198,7 +516,8 @@ export async function POST(request: Request) {
         summary: rawItem.description
           ? rawItem.description.slice(0, 220).trim()
           : 'Hugging Face 官方博客，点击查看原文。',
-        content: '',
+        content: detail.content,
+        content_blocks: detail.content_blocks,
         status: '已发布',
         author: detail.author || 'Hugging Face',
         cover_image: detail.cover_image,

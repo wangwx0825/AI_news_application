@@ -1,6 +1,10 @@
 import EntryLayout from '@/components/EntryLayout'
 import InfoCard from '@/components/InfoCard'
+import NewsContentBlocks, {
+  type NewsContentBlock,
+} from '@/components/NewsContentBlocks'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default async function NewsDetailPage({
   params,
@@ -27,10 +31,13 @@ export default async function NewsDetailPage({
 
   const infoCardItems = [
     { label: '发布时间', value: news.published_at?.slice(0, 10) ?? '' },
-    { label: '作者', value: news.author ?? '' },
     { label: '来源', value: news.source ?? '' },
     { label: '状态', value: news.status ?? '' },
   ]
+
+  const contentBlocks = Array.isArray(news.content_blocks)
+    ? (news.content_blocks as NewsContentBlock[])
+    : []
 
   return (
     <EntryLayout
@@ -49,9 +56,9 @@ export default async function NewsDetailPage({
       ) : null}
 
       <div className="mb-6 flex flex-wrap gap-4 text-sm">
-        <a href="/news" className="text-link hover:underline">
+        <Link href="/news" className="text-link hover:underline">
           ← 返回新闻列表
-        </a>
+        </Link>
 
         {news.source_url ? (
           <a
@@ -65,9 +72,12 @@ export default async function NewsDetailPage({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-border bg-white/70 p-4 text-sm text-sub">
-        当前页面仅展示新闻标题与封面图片，完整内容请查看原文。
-      </div>
+      <NewsContentBlocks
+        blocks={contentBlocks}
+        coverImage={news.cover_image}
+        fallbackContent={news.content}
+        sourceUrl={news.source_url}
+      />
     </EntryLayout>
   )
 }

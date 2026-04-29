@@ -24,7 +24,7 @@ export default async function AdminNewsPage() {
   const { data: newsList, error } = await supabase
     .from('news')
     .select('*')
-    .order('published_at', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -66,7 +66,7 @@ export default async function AdminNewsPage() {
                     {item.status ?? '未设置'}
                   </td>
                   <td className="border-b border-border px-4 py-3">
-                    {item.published_at?.slice(0, 10)}
+                    {item.published_at?.slice(0, 10) ?? '暂无日期'}
                   </td>
                   <td className="border-b border-border px-4 py-3">
                     <div className="flex gap-3">

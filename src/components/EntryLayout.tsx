@@ -25,8 +25,8 @@ export default function EntryLayout({ breadcrumbItems, title, infoCard, children
           词条
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-6 items-start">
-        <div>{children}</div>
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="min-w-0">{children}</div>
         <div className="order-first md:order-none">{infoCard}</div>
       </div>
     </>
