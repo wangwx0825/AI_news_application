@@ -402,35 +402,46 @@ function blocksToPlainText(blocks: ContentBlock[]) {
 }
 
 async function fetchOpenAIDetail(fullUrl: string) {
-  try {
-    const response = await fetch(toReaderUrl(fullUrl), {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      cache: 'no-store',
-    })
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      if (attempt > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
+      }
 
-    if (!response.ok) {
+      const response = await fetch(toReaderUrl(fullUrl), {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        continue
+      }
+
+      const markdown = await response.text()
+      const contentBlocks = parseMarkdownContent(markdown)
+
+      if (!contentBlocks.length) {
+        continue
+      }
+
+      const firstImage = contentBlocks.find((block) => block.type === 'image')
+
       return {
-        content: '',
-        content_blocks: [] as ContentBlock[],
-        cover_image: null as string | null,
+        content: blocksToPlainText(contentBlocks),
+        content_blocks: contentBlocks,
+        cover_image: firstImage?.src || null,
+      }
+    } catch {
+      if (attempt === 2) {
+        break
       }
     }
+  }
 
-    const markdown = await response.text()
-    const contentBlocks = parseMarkdownContent(markdown)
-    const firstImage = contentBlocks.find((block) => block.type === 'image')
-
-    return {
-      content: blocksToPlainText(contentBlocks),
-      content_blocks: contentBlocks,
-      cover_image: firstImage?.src || null,
-    }
-  } catch {
-    return {
-      content: '',
-      content_blocks: [] as ContentBlock[],
-      cover_image: null as string | null,
-    }
+  return {
+    content: '',
+    content_blocks: [] as ContentBlock[],
+    cover_image: null as string | null,
   }
 }
 

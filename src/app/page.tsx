@@ -17,12 +17,21 @@ export default async function Home() {
     <div className="relative min-h-screen">
       <BackgroundVideo />
 
-      <div className="mx-auto max-w-[1080px] px-4 py-6 sm:px-6 lg:px-8">
-        <section className="rounded-[32px] border border-white/50 bg-white/20 px-5 py-6 shadow-[0_10px_40px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 lg:px-8">
+        <section className="home-intel-shell relative overflow-hidden rounded-[28px] border border-white/55 bg-white/24 px-5 py-6 shadow-[0_18px_60px_rgba(36,42,52,0.08)] backdrop-blur-xl sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+          <div className="home-grid-overlay" aria-hidden="true" />
+          <div className="home-scanline" aria-hidden="true" />
+
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[28px] border border-white/45 bg-white/16 p-7 shadow-[0_8px_30px_rgba(0,0,0,0.05)] backdrop-blur-md sm:p-8">
-              <div className="inline-block rounded-full border border-border/70 bg-white/35 px-3 py-1 text-sm text-sub backdrop-blur-sm">
-                AI 新闻聚合平台
+            <div className="home-rise relative rounded-[24px] border border-white/45 bg-white/20 p-7 shadow-[0_10px_34px_rgba(36,42,52,0.06)] backdrop-blur-md sm:p-8">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/42 px-3 py-1 text-sm text-sub backdrop-blur-sm">
+                  <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_14px_rgba(200,85,58,0.55)]" />
+                  AI 新闻聚合平台
+                </div>
+                <div className="rounded-full border border-white/45 bg-white/28 px-3 py-1 text-xs text-sub">
+                  Live Briefing
+                </div>
               </div>
 
               <h1 className="mt-5 font-serif text-4xl font-bold leading-tight text-text sm:text-5xl">
@@ -49,9 +58,24 @@ export default async function Home() {
                   <div className="mt-1">资讯内容入口</div>
                 </div>
               </div>
+
+              <div className="mt-8 grid gap-2 text-xs text-sub sm:grid-cols-3">
+                {['OpenAI', 'DeepMind', 'Meta AI'].map((source, index) => (
+                  <div
+                    key={source}
+                    className="home-signal rounded-xl border border-white/45 bg-white/24 px-3 py-2"
+                    style={{ animationDelay: `${index * 160}ms` }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{source}</span>
+                      <span className="font-semibold text-link">SYNC</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/45 bg-white/18 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.05)] backdrop-blur-md">
+            <div className="home-rise relative rounded-[24px] border border-white/45 bg-white/22 p-6 shadow-[0_10px_34px_rgba(36,42,52,0.06)] backdrop-blur-md [animation-delay:120ms]">
               <div className="flex items-center justify-between border-b border-white/35 pb-4">
                 <div>
                   <div className="text-sm text-sub">今日精选</div>
@@ -72,7 +96,7 @@ export default async function Home() {
                 {featuredNews ? (
                   <Link
                     href={`/news/${featuredNews.slug}`}
-                    className="group block overflow-hidden rounded-2xl border border-white/45 bg-white/45 no-underline shadow-[0_8px_24px_rgba(0,0,0,0.05)] transition duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)]"
+                    className="group block overflow-hidden rounded-2xl border border-white/45 bg-white/50 no-underline shadow-[0_10px_28px_rgba(36,42,52,0.07)] transition duration-300 hover:-translate-y-1 hover:bg-white/65 hover:shadow-[0_16px_34px_rgba(36,42,52,0.1)]"
                   >
                     {featuredNews.cover_image ? (
                       <img
@@ -109,7 +133,7 @@ export default async function Home() {
               <Link
                 key={item.id}
                 href={`/news/${item.slug}`}
-                className="group block rounded-[28px] border border-white/45 bg-white/18 p-6 no-underline shadow-[0_8px_24px_rgba(0,0,0,0.05)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-white/32 hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)]"
+                className="home-rise group block rounded-[24px] border border-white/45 bg-white/20 p-6 no-underline shadow-[0_10px_28px_rgba(36,42,52,0.06)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-white/36 hover:shadow-[0_16px_34px_rgba(36,42,52,0.09)]"
               >
                 <div className="text-sm text-sub">
                   {item.source ?? '未知来源'}

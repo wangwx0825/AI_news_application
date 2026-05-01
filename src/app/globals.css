@@ -42,3 +42,94 @@ a:hover {
 details[open] > summary > .tree-arrow {
   transform: rotate(90deg);
 }
+
+.home-intel-shell {
+  isolation: isolate;
+}
+
+.home-grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(42, 100, 150, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 100, 150, 0.1) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(90deg, transparent, black 14%, black 86%, transparent);
+}
+
+.home-scanline {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.5) 48%,
+      rgba(42, 100, 150, 0.12) 50%,
+      transparent 56%,
+      transparent 100%
+    );
+  animation: home-scan 9s ease-in-out infinite;
+}
+
+.home-rise {
+  animation: home-rise 700ms ease both;
+}
+
+.home-signal {
+  animation: home-signal 2.8s ease-in-out infinite;
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-scan {
+  0%,
+  18% {
+    transform: translateX(-55%);
+    opacity: 0;
+  }
+
+  38%,
+  62% {
+    opacity: 1;
+  }
+
+  82%,
+  100% {
+    transform: translateX(55%);
+    opacity: 0;
+  }
+}
+
+@keyframes home-signal {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise,
+  .home-signal,
+  .home-scanline {
+    animation: none;
+  }
+}
