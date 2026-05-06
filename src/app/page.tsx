@@ -3,12 +3,20 @@ import BackgroundVideo from '@/components/BackgroundVideo'
 import { supabase } from '@/lib/supabase'
 
 export default async function Home() {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
   const { data: latestNews } = await supabase
     .from('news')
     .select('*')
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false })
     .limit(3)
+
+  const { count: todayAddedCount } = await supabase
+    .from('news')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', todayStart.toISOString())
 
   const featuredNews = latestNews?.[0]
   const secondaryNews = latestNews?.slice(1) ?? []
@@ -72,6 +80,14 @@ export default async function Home() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/40 bg-white/28 px-4 py-3 text-lg text-sub backdrop-blur-sm">
+                今日新增
+                <span className="mx-1 font-semibold text-text">
+                  {todayAddedCount ?? 0}
+                </span>
+                条 AI 资讯
               </div>
             </div>
 

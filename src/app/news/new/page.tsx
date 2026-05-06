@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { slugify } from '@/lib/news-import/common'
 
 export default function NewNewsPage() {
   const router = useRouter()
@@ -16,6 +17,24 @@ export default function NewNewsPage() {
   const [coverImage, setCoverImage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+
+  async function ensureUniqueSlug(baseSlug: string) {
+    const normalizedSlug = slugify(baseSlug) || slugify(title) || 'news'
+
+    for (let index = 0; index < 50; index += 1) {
+      const candidate = index === 0 ? normalizedSlug : `${normalizedSlug}-${index + 1}`
+      const { data, error } = await supabase
+        .from('news')
+        .select('id')
+        .eq('slug', candidate)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) return candidate
+    }
+
+    return `${normalizedSlug}-${Date.now().toString(36)}`
+  }
 
   useEffect(() => {
     async function checkAdmin() {
@@ -41,15 +60,6 @@ export default function NewNewsPage() {
     checkAdmin()
   }, [router])
 
-  function slugify(text: string) {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-')
-  }
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSubmitting(true)
@@ -73,13 +83,23 @@ export default function NewNewsPage() {
       return
     }
 
+    let uniqueSlug = slug
+
+    try {
+      uniqueSlug = await ensureUniqueSlug(slug)
+    } catch (error) {
+      setSubmitting(false)
+      setErrorMessage(error instanceof Error ? error.message : '检查 Slug 失败')
+      return
+    }
+
     const { error } = await supabase.from('news').insert([
       {
         title,
         summary,
         content,
         author,
-        slug,
+        slug: uniqueSlug,
         cover_image: coverImage,
         status: '已发布',
       },

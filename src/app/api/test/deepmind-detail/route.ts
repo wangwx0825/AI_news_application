@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 import type { AnyNode } from 'domhandler'
+import { authorizeDebugRoute } from '@/lib/debug-route-auth'
+import { cleanInlineText as cleanText, toAbsoluteUrl } from '@/lib/news-import/common'
 
 type DeepMindPageVariant = 'standard-article' | 'component-heavy'
 type DeepMindPageFamily = 'deepmind-site' | 'google-blog'
@@ -14,19 +16,6 @@ type DebugImageCandidate = {
   context: string
   decision: 'keep' | 'skip'
   reason: string
-}
-
-function cleanText(text: string) {
-  return text.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
-function toAbsoluteUrl(url: string | undefined, baseUrl: string) {
-  if (!url) return null
-  try {
-    return new URL(url, baseUrl).toString()
-  } catch {
-    return null
-  }
 }
 
 function upgradeImageUrl(src: string | null) {
@@ -343,12 +332,8 @@ function inspectImageCandidates(
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const expected = `Bearer ${process.env.CRON_SECRET}`
-
-  if (process.env.CRON_SECRET && authHeader !== expected) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = authorizeDebugRoute(request)
+  if (authError) return authError
 
   const url = request.nextUrl.searchParams.get('url')
 

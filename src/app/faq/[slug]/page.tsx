@@ -2,7 +2,6 @@ import EntryLayout from '@/components/EntryLayout'
 import Section from '@/components/Section'
 import InfoCard from '@/components/InfoCard'
 import { supabase } from '@/lib/supabase'
-import DeleteFAQButton from '@/components/DeleteFAQButton'
 
 export default async function FAQDetailPage({
   params,

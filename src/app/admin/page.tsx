@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase-server'
+import AdminImportNewsButton from '@/components/AdminImportNewsButton'
 import AdminLogoutButton from '@/components/AdminLogoutButton'
 
 export default async function AdminPage() {
@@ -71,6 +72,24 @@ export default async function AdminPage() {
             查看和维护后台管理员账户列表。
           </p>
         </a>
+
+        <a
+          href="/admin/import-runs"
+          className="group block rounded-2xl border border-border bg-white/80 p-6 no-underline shadow-lg transition duration-300 hover:-translate-y-1 hover:bg-white/90"
+        >
+          <div className="text-xl font-semibold text-text">
+            <span className="inline-block transition duration-300 group-hover:scale-105">
+              采集日志
+            </span>
+          </div>
+          <p className="mt-2 text-sm leading-7 text-sub">
+            查看新闻采集的执行状态、耗时和错误记录。
+          </p>
+        </a>
+      </div>
+
+      <div className="mt-4">
+        <AdminImportNewsButton />
       </div>
     </main>
   )

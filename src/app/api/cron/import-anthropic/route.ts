@@ -1,44 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authorizeCronRoute } from '@/lib/cron-route-auth'
+import { runAnthropicImport } from '@/lib/news-import/importers'
+import { runScheduledImport } from '@/lib/news-import/scheduled-runner'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const expected = `Bearer ${process.env.CRON_SECRET}`
-
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: 'CRON_SECRET 未配置' },
-      { status: 500 }
-    )
-  }
-
-  if (authHeader !== expected) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
-  }
+  const authError = authorizeCronRoute(request)
+  if (authError) return authError
 
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      new URL(request.url).origin
-
-    const response = await fetch(`${baseUrl}/api/import/anthropic-news`, {
-      method: 'POST',
-      headers: {
-        authorization: expected,
-      },
-      cache: 'no-store',
+    const refreshExisting = new URL(request.url).searchParams.get('refresh') === '1'
+    const anthropic = await runScheduledImport({
+      name: 'Anthropic',
+      runner: runAnthropicImport,
+      importOptions: refreshExisting ? { refreshExisting: true } : undefined,
     })
-
-    const data = await response.json()
 
     return NextResponse.json({
       message: 'Cron 执行完成',
-      upstream_status: response.status,
-      result: data,
+      mode: refreshExisting ? 'full_refresh' : 'incremental',
+      upstream_status: anthropic.status,
+      result: anthropic.result,
+      attempts: anthropic.attempts,
+      duration_ms: anthropic.duration_ms,
     })
   } catch (error) {
     return NextResponse.json(

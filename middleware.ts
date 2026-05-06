@@ -31,11 +31,39 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set(
+      'next',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    )
+
+    return NextResponse.redirect(loginUrl)
+  }
+
+  const { data: adminUser } = await supabase
+    .from('admin_users')
+    .select('email')
+    .eq('email', user.email ?? '')
+    .maybeSingle()
+
+  if (!adminUser) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
 
   return response
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/news/new',
+    '/news/:slug/edit',
+    '/faq/new',
+    '/faq/:slug/edit',
+  ],
 }

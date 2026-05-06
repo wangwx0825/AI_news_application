@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { slugify } from '@/lib/news-import/common'
 
 export default function NewFAQPage() {
   const router = useRouter()
@@ -38,15 +39,6 @@ export default function NewFAQPage() {
 
     checkAdmin()
   }, [router])
-
-  function slugify(text: string) {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-')
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

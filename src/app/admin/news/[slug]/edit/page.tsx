@@ -97,6 +97,26 @@ export default function AdminEditNewsPage() {
       return
     }
 
+    if (newSlug !== slug) {
+      const { data: existingNews, error: slugError } = await supabase
+        .from('news')
+        .select('id')
+        .eq('slug', newSlug)
+        .maybeSingle()
+
+      if (slugError) {
+        setSubmitting(false)
+        setErrorMessage(slugError.message)
+        return
+      }
+
+      if (existingNews) {
+        setSubmitting(false)
+        setErrorMessage('这个 Slug 已被其他新闻使用，请换一个。')
+        return
+      }
+    }
+
     const { error } = await supabase
       .from('news')
       .update({
