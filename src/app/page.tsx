@@ -2,6 +2,8 @@ import Link from 'next/link'
 import BackgroundVideo from '@/components/BackgroundVideo'
 import { supabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -10,7 +12,8 @@ export default async function Home() {
     .from('news')
     .select('*')
     .not('published_at', 'is', null)
-    .order('published_at', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false, nullsFirst: false })
     .limit(3)
 
   const { count: todayAddedCount } = await supabase
