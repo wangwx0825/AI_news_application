@@ -289,6 +289,16 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
 
 ---
 
+## 原生 App 打包
+
+项目已配置 Capacitor，可将线上站点打包为 iOS 和 Android 原生 App。发布步骤见：
+
+```text
+APP_RELEASE.md
+```
+
+---
+
 ## 复盘报告
 
 项目复盘见：
