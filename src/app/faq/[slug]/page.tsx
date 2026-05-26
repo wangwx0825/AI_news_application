@@ -2,6 +2,7 @@ import EntryLayout from '@/components/EntryLayout'
 import Section from '@/components/Section'
 import InfoCard from '@/components/InfoCard'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default async function FAQDetailPage({
   params,
@@ -41,9 +42,9 @@ export default async function FAQDetailPage({
       infoCard={<InfoCard title="FAQ 信息" items={infoCardItems} />}
     >
       <div className="mb-6">
-        <a href="/faq" className="text-sm text-link hover:underline">
+        <Link href="/faq" className="text-sm text-link hover:underline">
           ← 返回 FAQ 列表
-        </a>
+        </Link>
       </div>
 
       <Section title="回答" defaultOpen>

@@ -1,9 +1,12 @@
 {
   "name": "Company Wiki",
-  "short_name": "Company Wiki",
-  "description": "企业知识库模板",
+  "short_name": "Wiki",
+  "description": "AI 新闻聚合平台",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#f8f6f1",
   "theme_color": "#2a6496",
   "icons": [

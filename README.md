@@ -279,13 +279,13 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
 4. 确认 Supabase 已执行 `schema.example.sql` 或 `rls-policies.sql`。
 5. 部署后访问线上地址。
 
-如需配置 Vercel Cron，可让定时任务请求：
+项目已在 `vercel.json` 中配置 Vercel Cron，每天 `08:00 UTC` 请求：
 
 ```text
 /api/cron/import-all-news
 ```
 
-并携带 `Authorization: Bearer <CRON_SECRET>`。
+只要在 Vercel Environment Variables 中配置了 `CRON_SECRET`，Vercel 会自动携带 `Authorization: Bearer <CRON_SECRET>` 请求该路由。
 
 ---
 

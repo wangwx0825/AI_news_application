@@ -17,6 +17,17 @@ export type OpenAIRssItem = {
   category?: string
 }
 
+type RawOpenAIRssItem = {
+  title?: string
+  link?: string
+  pubDate?: string
+  published?: string
+  date?: string
+  description?: string
+  'content:encoded'?: string
+  category?: string
+}
+
 export function parseOpenAIDate(dateText: string | undefined) {
   if (!dateText) return null
   const parsed = new Date(dateText)
@@ -454,12 +465,12 @@ export async function fetchOpenAIRssItems() {
   const items = Array.isArray(raw) ? raw : [raw]
 
   return items
-    .map((item: any) => ({
-      title: cleanInlineText(item?.title || ''),
-      link: item?.link || '',
-      pubDate: item?.pubDate || item?.published || item?.date || '',
-      description: stripHtml(item?.description || item?.['content:encoded'] || ''),
-      category: cleanInlineText(item?.category || ''),
+    .map((item: RawOpenAIRssItem) => ({
+      title: cleanInlineText(item.title || ''),
+      link: item.link || '',
+      pubDate: item.pubDate || item.published || item.date || '',
+      description: stripHtml(item.description || item['content:encoded'] || ''),
+      category: cleanInlineText(item.category || ''),
     }))
     .filter((item: OpenAIRssItem) => item.title && item.link)
 }

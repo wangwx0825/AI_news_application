@@ -412,6 +412,15 @@ export type HuggingFaceRssItem = {
   description?: string
 }
 
+type RawHuggingFaceRssItem = {
+  title?: string
+  link?: string
+  pubDate?: string
+  published?: string
+  date?: string
+  description?: string
+}
+
 export async function fetchHuggingFaceRssItems() {
   const rssUrl = 'https://huggingface.co/blog/feed.xml'
 
@@ -439,11 +448,11 @@ export async function fetchHuggingFaceRssItems() {
   const items = Array.isArray(raw) ? raw : [raw]
 
   return items
-    .map((item: any) => ({
-      title: cleanInlineText(item?.title || ''),
-      link: item?.link || '',
-      pubDate: item?.pubDate || item?.published || item?.date || '',
-      description: stripHtml(item?.description || ''),
+    .map((item: RawHuggingFaceRssItem) => ({
+      title: cleanInlineText(item.title || ''),
+      link: item.link || '',
+      pubDate: item.pubDate || item.published || item.date || '',
+      description: stripHtml(item.description || ''),
     }))
     .filter((item: HuggingFaceRssItem) => item.title && item.link)
 }
