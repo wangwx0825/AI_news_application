@@ -4,13 +4,14 @@ import PwaRegister from '@/components/PwaRegister'
 import type { Metadata, Viewport } from 'next'
 
 export const metadata: Metadata = {
+  applicationName: 'AI News Application',
   manifest: '/manifest.json',
-  title: 'Company Wiki',
+  title: 'AI News Application',
   description: 'AI 新闻聚合平台',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Company Wiki',
+    title: 'AI News',
   },
   icons: {
     icon: [
